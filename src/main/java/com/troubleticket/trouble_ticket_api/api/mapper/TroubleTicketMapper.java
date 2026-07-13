@@ -1,6 +1,9 @@
 package com.troubleticket.trouble_ticket_api.api.mapper;
 
+import com.troubleticket.generated.model.TroubleTicketSummary;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class TroubleTicketMapper {
@@ -45,5 +48,36 @@ public class TroubleTicketMapper {
         api.setDate(note.getCreatedAt());
 
         return api;
+    }
+
+    public com.troubleticket.generated.model.TroubleTicketSummary toSummary(
+            com.troubleticket.trouble_ticket_api.domain.model.TroubleTicket domain
+    ) {
+
+        var summary =
+                new com.troubleticket.generated.model.TroubleTicketSummary();
+
+        summary.setExternalId(domain.getExternalId());
+
+        summary.setServiceId(domain.getServiceId());
+
+        summary.setDescription(domain.getDescription());
+
+        summary.setStatus(
+                com.troubleticket.generated.model.TroubleTicketStatus.valueOf(
+                        domain.getStatus().name()
+                )
+        );
+
+        return summary;
+    }
+
+    public List<TroubleTicketSummary> toSummaryList(
+            List<com.troubleticket.trouble_ticket_api.domain.model.TroubleTicket> tickets
+    ) {
+
+        return tickets.stream()
+                .map(this::toSummary)
+                .toList();
     }
 }

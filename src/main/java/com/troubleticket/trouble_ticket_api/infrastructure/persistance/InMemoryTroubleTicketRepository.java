@@ -4,10 +4,7 @@ import com.troubleticket.trouble_ticket_api.application.port.out.TroubleTicketRe
 import com.troubleticket.trouble_ticket_api.domain.model.TroubleTicket;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Repository
@@ -20,6 +17,18 @@ public class InMemoryTroubleTicketRepository
     public TroubleTicket save(TroubleTicket ticket) {
         storage.put(ticket.getId(), ticket);
         return ticket;
+    }
+
+    @Override
+    public Optional<TroubleTicket> findById(UUID id) {
+
+        return Optional.ofNullable(storage.get(id));
+    }
+
+    @Override
+    public List<TroubleTicket> findAll() {
+
+        return new ArrayList<>(storage.values());
     }
 
 }
