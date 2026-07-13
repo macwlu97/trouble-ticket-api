@@ -20,8 +20,14 @@ public class TroubleTicketService implements CreateTroubleTicketUseCase {
 
         TroubleTicket ticket = new TroubleTicket(
                 UUID.randomUUID(),
+                request.getExternalId(),
+                request.getServiceId(),
                 request.getDescription()
         );
+
+        if (request.getNote() != null && !request.getNote().isBlank()) {
+            ticket.addNote(request.getNote());
+        }
 
         return repository.save(ticket);
     }

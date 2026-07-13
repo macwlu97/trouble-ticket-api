@@ -13,6 +13,10 @@ public class TroubleTicketMapper {
 
         api.setId(domain.getId().toString());
 
+        api.setExternalId(domain.getExternalId());
+
+        api.setServiceId(domain.getServiceId());
+
         api.setDescription(domain.getDescription());
 
         api.setStatus(
@@ -20,6 +24,25 @@ public class TroubleTicketMapper {
                         domain.getStatus().name()
                 )
         );
+
+        api.setNotes(
+                domain.getNotes().stream()
+                        .map(this::toApi)
+                        .toList()
+        );
+
+        return api;
+    }
+
+    private com.troubleticket.generated.model.Note toApi(
+            com.troubleticket.trouble_ticket_api.domain.model.Note note
+    ) {
+
+        var api = new com.troubleticket.generated.model.Note();
+
+        api.setId(note.getId().toString());
+        api.setText(note.getText());
+        api.setDate(note.getCreatedAt());
 
         return api;
     }
