@@ -11,10 +11,11 @@ public class Note {
 
     private final OffsetDateTime createdAt;
 
-    public Note(UUID id,
-                String text,
-                OffsetDateTime createdAt) {
-
+    public Note(
+            UUID id,
+            String text,
+            OffsetDateTime createdAt
+    ) {
         this.id = id;
         this.text = text;
         this.createdAt = createdAt;

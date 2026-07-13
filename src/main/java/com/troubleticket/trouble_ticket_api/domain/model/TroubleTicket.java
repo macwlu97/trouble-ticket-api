@@ -64,15 +64,17 @@ public class TroubleTicket {
         return Collections.unmodifiableList(notes);
     }
 
-    public void addNote(String text) {
+    public Note addNote(String text) {
 
-        notes.add(
-                new Note(
-                        UUID.randomUUID(),
-                        text,
-                        OffsetDateTime.now()
-                )
+        Note note = new Note(
+                UUID.randomUUID(),
+                text,
+                OffsetDateTime.now()
         );
+
+        notes.add(note);
+
+        return note;
     }
 
     public void acknowledge() {
@@ -87,6 +89,11 @@ public class TroubleTicket {
 
     public void close() {
 
+        if (status == TroubleTicketStatus.CLOSED) {
+            return;
+        }
+
         status = TroubleTicketStatus.CLOSED;
     }
+
 }

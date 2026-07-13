@@ -1,10 +1,10 @@
 package com.troubleticket.trouble_ticket_api.api.controller;
 
 import com.troubleticket.generated.api.TroubleTicketApi;
-import com.troubleticket.generated.model.TroubleTicket;
-import com.troubleticket.generated.model.TroubleTicketCreateRequest;
-import com.troubleticket.generated.model.TroubleTicketSummary;
+import com.troubleticket.generated.model.*;
 import com.troubleticket.trouble_ticket_api.api.mapper.TroubleTicketMapper;
+import com.troubleticket.trouble_ticket_api.application.port.in.AddNoteUseCase;
+import com.troubleticket.trouble_ticket_api.application.port.in.CloseTroubleTicketUseCase;
 import com.troubleticket.trouble_ticket_api.application.port.in.CreateTroubleTicketUseCase;
 import com.troubleticket.trouble_ticket_api.application.port.in.GetTroubleTicketUseCase;
 import jakarta.validation.Valid;
@@ -23,6 +23,7 @@ public class TroubleTicketController implements TroubleTicketApi {
 
     private final CreateTroubleTicketUseCase createTroubleTicketUseCase;
     private final GetTroubleTicketUseCase getTroubleTicketUseCase;
+    private final CloseTroubleTicketUseCase closeTroubleTicketUseCase;
     private final TroubleTicketMapper mapper;
 
     @Override
@@ -61,4 +62,18 @@ public class TroubleTicketController implements TroubleTicketApi {
         );
     }
 
+    @Override
+    public ResponseEntity<TroubleTicket> closeTroubleTicket(
+            String id,
+            TroubleTicketCloseStatusRequest request
+    ) {
+
+        var ticket = closeTroubleTicketUseCase.close(
+                UUID.fromString(id)
+        );
+
+        return ResponseEntity.ok(
+                mapper.toApi(ticket)
+        );
+    }
 }

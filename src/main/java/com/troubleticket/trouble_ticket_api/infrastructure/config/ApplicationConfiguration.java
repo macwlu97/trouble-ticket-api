@@ -1,5 +1,7 @@
 package com.troubleticket.trouble_ticket_api.infrastructure.config;
 
+import com.troubleticket.trouble_ticket_api.application.port.in.AddNoteUseCase;
+import com.troubleticket.trouble_ticket_api.application.port.in.CloseTroubleTicketUseCase;
 import com.troubleticket.trouble_ticket_api.application.port.in.CreateTroubleTicketUseCase;
 import com.troubleticket.trouble_ticket_api.application.port.in.GetTroubleTicketUseCase;
 import com.troubleticket.trouble_ticket_api.application.port.out.TroubleTicketRepository;
@@ -30,4 +32,20 @@ public class ApplicationConfiguration {
     ) {
         return service;
     }
+
+    @Bean
+    CloseTroubleTicketUseCase closeTroubleTicketUseCase(
+            TroubleTicketService service
+    ) {
+        return service;
+    }
+
+    @Bean
+    AddNoteUseCase addTroubleTicketNoteUseCase(
+            TroubleTicketService service
+    ) {
+        return service;
+    }
+
+
 }

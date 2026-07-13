@@ -1,4 +1,14 @@
 package com.troubleticket.trouble_ticket_api.application.port.in;
 
-public class AddNoteUseCase {
+import com.troubleticket.generated.model.NoteCreateRequest;
+import com.troubleticket.trouble_ticket_api.domain.model.Note;
+
+import java.util.UUID;
+
+public interface AddNoteUseCase {
+
+    Note addNote(
+            UUID ticketId,
+            NoteCreateRequest request
+    );
 }

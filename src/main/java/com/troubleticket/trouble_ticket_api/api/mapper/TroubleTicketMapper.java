@@ -37,7 +37,7 @@ public class TroubleTicketMapper {
         return api;
     }
 
-    private com.troubleticket.generated.model.Note toApi(
+    public com.troubleticket.generated.model.Note toApi(
             com.troubleticket.trouble_ticket_api.domain.model.Note note
     ) {
 
