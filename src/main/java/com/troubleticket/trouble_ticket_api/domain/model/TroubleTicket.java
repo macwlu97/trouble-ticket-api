@@ -36,6 +36,24 @@ public class TroubleTicket {
         this.createdAt = OffsetDateTime.now();
     }
 
+    public TroubleTicket(
+            UUID id,
+            String externalId,
+            Long serviceId,
+            String description,
+            TroubleTicketStatus status,
+            OffsetDateTime createdAt,
+            List<Note> notes
+    ) {
+        this.id = id;
+        this.externalId = externalId;
+        this.serviceId = serviceId;
+        this.description = description;
+        this.status = status;
+        this.createdAt = createdAt;
+        this.notes.addAll(notes);
+    }
+
     public UUID getId() {
         return id;
     }

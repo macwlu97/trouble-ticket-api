@@ -2,13 +2,6 @@ spring:
   application:
     name: trouble-ticket-api
 
-  profiles:
-    active: dev
-
-  mvc:
-    pathmatch:
-      matching-strategy: ant_path_matcher
-
   datasource:
     url: jdbc:postgresql://localhost:5432/trouble_ticket
     username: postgres
@@ -35,7 +28,3 @@ springdoc:
 
   swagger-ui:
     path: /swagger-ui
-
-server:
-  servlet:
-    context-path: /api/v1

@@ -12,7 +12,8 @@ public interface TroubleTicketRepository {
 
     Optional<TroubleTicket> findById(UUID id);
 
-    List<TroubleTicket> findAll();
+    Optional<TroubleTicket> findByExternalId(String externalId);
 
+    List<TroubleTicket> findAll();
 
 }

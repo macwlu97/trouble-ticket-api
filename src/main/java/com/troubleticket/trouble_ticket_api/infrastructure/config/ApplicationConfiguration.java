@@ -6,6 +6,7 @@ import com.troubleticket.trouble_ticket_api.application.port.in.CreateTroubleTic
 import com.troubleticket.trouble_ticket_api.application.port.in.GetTroubleTicketUseCase;
 import com.troubleticket.trouble_ticket_api.application.port.out.TroubleTicketRepository;
 import com.troubleticket.trouble_ticket_api.application.service.TroubleTicketService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -13,39 +14,37 @@ import org.springframework.context.annotation.Configuration;
 public class ApplicationConfiguration {
 
     @Bean
-    TroubleTicketService troubleTicketService(
+    public TroubleTicketService troubleTicketService(
             TroubleTicketRepository repository
     ) {
         return new TroubleTicketService(repository);
     }
 
     @Bean
-    CreateTroubleTicketUseCase createTroubleTicketUseCase(
-            TroubleTicketService service
+    public CreateTroubleTicketUseCase createTroubleTicketUseCase(
+            @Qualifier("troubleTicketService") TroubleTicketService service
     ) {
         return service;
     }
 
     @Bean
-    GetTroubleTicketUseCase getTroubleTicketUseCase(
-            TroubleTicketService service
+    public GetTroubleTicketUseCase getTroubleTicketUseCase(
+            @Qualifier("troubleTicketService") TroubleTicketService service
     ) {
         return service;
     }
 
     @Bean
-    CloseTroubleTicketUseCase closeTroubleTicketUseCase(
-            TroubleTicketService service
+    public CloseTroubleTicketUseCase closeTroubleTicketUseCase(
+            @Qualifier("troubleTicketService") TroubleTicketService service
     ) {
         return service;
     }
 
     @Bean
-    AddNoteUseCase addTroubleTicketNoteUseCase(
-            TroubleTicketService service
+    public AddNoteUseCase addNoteUseCase(
+            @Qualifier("troubleTicketService") TroubleTicketService service
     ) {
         return service;
     }
-
-
 }

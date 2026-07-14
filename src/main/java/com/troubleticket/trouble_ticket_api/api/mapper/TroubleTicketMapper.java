@@ -22,11 +22,7 @@ public class TroubleTicketMapper {
 
         api.setDescription(domain.getDescription());
 
-        api.setStatus(
-                com.troubleticket.generated.model.TroubleTicketStatus.valueOf(
-                        domain.getStatus().name()
-                )
-        );
+        api.setStatus(toApiStatus(domain.getStatus()));
 
         api.setNotes(
                 domain.getNotes().stream()
@@ -79,5 +75,11 @@ public class TroubleTicketMapper {
         return tickets.stream()
                 .map(this::toSummary)
                 .toList();
+    }
+
+    private com.troubleticket.generated.model.TroubleTicketStatus toApiStatus(
+            com.troubleticket.trouble_ticket_api.domain.model.TroubleTicketStatus status
+    ) {
+        return com.troubleticket.generated.model.TroubleTicketStatus.valueOf(status.name());
     }
 }

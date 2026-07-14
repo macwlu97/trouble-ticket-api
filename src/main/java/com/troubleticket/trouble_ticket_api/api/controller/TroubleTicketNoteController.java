@@ -25,7 +25,7 @@ public class TroubleTicketNoteController
     @Override
     public ResponseEntity<Note> addTroubleTicketNote(
             String id,
-            @Valid NoteCreateRequest noteCreateRequest
+            NoteCreateRequest noteCreateRequest
     ) {
 
         var note = addNoteUseCase.addNote(
