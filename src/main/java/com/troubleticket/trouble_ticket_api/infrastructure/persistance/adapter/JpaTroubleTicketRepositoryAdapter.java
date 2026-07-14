@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Primary
 @Repository
@@ -22,49 +22,42 @@ public class JpaTroubleTicketRepositoryAdapter
 
     private final SpringDataTroubleTicketRepository repository;
 
-    public JpaTroubleTicketRepositoryAdapter(
-            SpringDataTroubleTicketRepository repository
-    ) {
+    public JpaTroubleTicketRepositoryAdapter(SpringDataTroubleTicketRepository repository) {
         this.repository = repository;
     }
 
     @Override
     public TroubleTicket save(TroubleTicket ticket) {
-
         TroubleTicketEntity entity = toEntity(ticket);
-
         TroubleTicketEntity saved = repository.save(entity);
-
         return toDomain(saved);
     }
 
     @Override
-    public Optional<TroubleTicket> findById(java.util.UUID id) {
-
-        return repository.findById(id)
+    public Optional<TroubleTicket> findByIdAndTenantId(UUID id, String tenantId) {
+        return repository.findByIdAndTenantId(id, tenantId)
                 .map(this::toDomain);
     }
 
     @Override
-    public Optional<TroubleTicket> findByExternalId(String externalId) {
-
-        return repository.findByExternalId(externalId)
+    public Optional<TroubleTicket> findByTenantIdAndExternalId(String tenantId, String externalId) {
+        return repository.findByTenantIdAndExternalId(tenantId, externalId)
                 .map(this::toDomain);
     }
 
     @Override
-    public List<TroubleTicket> findAll() {
-
-        return repository.findAll()
+    public List<TroubleTicket> findAllByTenantId(String tenantId) {
+        return repository.findAllByTenantId(tenantId)
                 .stream()
                 .map(this::toDomain)
                 .toList();
     }
 
     private TroubleTicketEntity toEntity(TroubleTicket ticket) {
-
+        // Enforces entity assembly using mandatory structural tenant parameters mapping anchor points
         TroubleTicketEntity entity = new TroubleTicketEntity(
                 ticket.getId(),
+                ticket.getTenantId(),
                 ticket.getExternalId(),
                 ticket.getServiceId(),
                 ticket.getDescription(),
@@ -75,12 +68,10 @@ public class JpaTroubleTicketRepositoryAdapter
         for (Note note : ticket.getNotes()) {
             entity.addNote(toEntity(note));
         }
-
         return entity;
     }
 
     private NoteEntity toEntity(Note note) {
-
         return new NoteEntity(
                 note.getId(),
                 note.getText(),
@@ -90,14 +81,14 @@ public class JpaTroubleTicketRepositoryAdapter
     }
 
     private TroubleTicket toDomain(TroubleTicketEntity entity) {
-
         List<Note> notes = entity.getNotes()
                 .stream()
                 .map(this::toDomain)
-                .collect(Collectors.toList());
+                .toList();
 
         return new TroubleTicket(
                 entity.getId(),
+                entity.getTenantId(),
                 entity.getExternalId(),
                 entity.getServiceId(),
                 entity.getDescription(),
@@ -108,7 +99,6 @@ public class JpaTroubleTicketRepositoryAdapter
     }
 
     private Note toDomain(NoteEntity entity) {
-
         return new Note(
                 entity.getId(),
                 entity.getText(),

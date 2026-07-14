@@ -10,10 +10,12 @@ public interface TroubleTicketRepository {
 
     TroubleTicket save(TroubleTicket ticket);
 
-    Optional<TroubleTicket> findById(UUID id);
+    // Context-aware search to prevent cross-tenant data exposure
+    Optional<TroubleTicket> findByIdAndTenantId(UUID id, String tenantId);
 
-    Optional<TroubleTicket> findByExternalId(String externalId);
+    // Business identity uniqueness scoped strictly to a single tenant
+    Optional<TroubleTicket> findByTenantIdAndExternalId(String tenantId, String externalId);
 
-    List<TroubleTicket> findAll();
-
+    // Dataset confinement limited exclusively to the authenticated tenant
+    List<TroubleTicket> findAllByTenantId(String tenantId);
 }

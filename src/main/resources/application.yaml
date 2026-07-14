@@ -2,6 +2,12 @@ spring:
   application:
     name: trouble-ticket-api
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/trouble-ticket-realm
+
   profiles:
     active: dev
 
@@ -39,3 +45,4 @@ springdoc:
 server:
   servlet:
     context-path: /api/v1
+

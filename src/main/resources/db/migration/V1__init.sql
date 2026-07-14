@@ -2,7 +2,9 @@ CREATE TABLE trouble_ticket
 (
     id UUID PRIMARY KEY,
 
-    external_id VARCHAR(255) NOT NULL UNIQUE,
+    tenant_id VARCHAR(100) NOT NULL, -- Added for multi-tenancy core isolation
+
+    external_id VARCHAR(255) NOT NULL, -- REMOVED: GLOBAL UNIQUE CONSTRAINT
 
     service_id BIGINT NOT NULL,
 
@@ -10,7 +12,11 @@ CREATE TABLE trouble_ticket
 
     status VARCHAR(50) NOT NULL,
 
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+
+    -- Composite unique constraint ensuring externalId is unique ONLY within a specific tenant scope
+    CONSTRAINT uk_ticket_tenant_external
+        UNIQUE (tenant_id, external_id)
 );
 
 CREATE TABLE note
@@ -29,8 +35,13 @@ CREATE TABLE note
         ON DELETE CASCADE
 );
 
-CREATE INDEX idx_ticket_external_id
-ON trouble_ticket(external_id);
+-- Index for optimized queries filtered by tenantId and externalId combinations
+CREATE UNIQUE INDEX idx_ticket_tenant_external
+ON trouble_ticket(tenant_id, external_id);
+
+-- Performance index for high-throughput tenant dashboard listings
+CREATE INDEX idx_ticket_tenant
+ON trouble_ticket(tenant_id);
 
 CREATE INDEX idx_note_ticket
 ON note(trouble_ticket_id);

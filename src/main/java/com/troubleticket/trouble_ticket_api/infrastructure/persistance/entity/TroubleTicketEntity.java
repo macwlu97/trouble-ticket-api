@@ -23,7 +23,10 @@ public class TroubleTicketEntity {
     @Id
     private UUID id;
 
-    @Column(name = "external_id", nullable = false, unique = true)
+    @Column(name = "tenant_id", nullable = false)
+    private String tenantId; // Added for multi-tenancy core isolation anchor points
+
+    @Column(name = "external_id", nullable = false) // REMOVED: unique = true (Uniqueness is handled by composite db index)
     private String externalId;
 
     @Column(name = "service_id", nullable = false)
@@ -47,11 +50,13 @@ public class TroubleTicketEntity {
     private List<NoteEntity> notes = new ArrayList<>();
 
     protected TroubleTicketEntity() {
-        // JPA
+        // Required default constructor by JPA specification standard compliance
     }
 
+    // Fully-parameterized constructor supporting tenant scope isolation data injection
     public TroubleTicketEntity(
             UUID id,
+            String tenantId, // Added to fix the structural constructor compiler mismatch
             String externalId,
             Long serviceId,
             String description,
@@ -59,6 +64,7 @@ public class TroubleTicketEntity {
             OffsetDateTime createdAt
     ) {
         this.id = id;
+        this.tenantId = tenantId;
         this.externalId = externalId;
         this.serviceId = serviceId;
         this.description = description;
@@ -68,7 +74,7 @@ public class TroubleTicketEntity {
 
     public void addNote(NoteEntity note) {
         notes.add(note);
-        note.setTroubleTicket(this);
+        note.setTroubleTicket(this); // Maintains bidirectional relational mapping integrity
     }
 
     public void removeNote(NoteEntity note) {
@@ -78,6 +84,10 @@ public class TroubleTicketEntity {
 
     public UUID getId() {
         return id;
+    }
+
+    public String getTenantId() {
+        return tenantId; // Added selector supporting multi-tenant core verification
     }
 
     public String getExternalId() {

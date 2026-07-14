@@ -10,7 +10,9 @@ import com.troubleticket.trouble_ticket_api.domain.model.TroubleTicketStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,6 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(TroubleTicketController.class)
+@Import(com.troubleticket.trouble_ticket_api.security.SecurityConfiguration.class)
 class TroubleTicketControllerTest {
 
     @Autowired
@@ -51,12 +54,12 @@ class TroubleTicketControllerTest {
         request.setExternalId("EXT-1");
         request.setServiceId(10L);
         request.setDescription("Problem");
-
         request.setNote("Initial note for the ticket");
         request.setStatus(com.troubleticket.generated.model.TroubleTicketCreateStatus.NEW);
 
         TroubleTicket domain = new TroubleTicket(
                 UUID.randomUUID(),
+                "tenant-demo",
                 "EXT-1",
                 10L,
                 "Problem",
@@ -80,12 +83,13 @@ class TroubleTicketControllerTest {
 
         mockMvc.perform(
                         post("/troubleTicket")
+                                .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                        .jwt(jwt -> jwt.claim("tenant_id", "tenant-demo").subject("partner-api-user")))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request))
                 )
                 .andExpect(status().isCreated());
     }
-
 
     @Test
     void shouldReturnList() throws Exception {
@@ -98,6 +102,8 @@ class TroubleTicketControllerTest {
 
         mockMvc.perform(
                         get("/troubleTicket")
+                                .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                        .jwt(jwt -> jwt.claim("tenant_id", "tenant-demo")))
                 )
                 .andExpect(status().isOk());
     }

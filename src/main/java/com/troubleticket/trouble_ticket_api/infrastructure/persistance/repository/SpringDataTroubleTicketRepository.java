@@ -13,14 +13,12 @@ import java.util.UUID;
 public interface SpringDataTroubleTicketRepository
         extends JpaRepository<TroubleTicketEntity, UUID> {
 
-    @Override
     @EntityGraph(attributePaths = {"notes"})
-    List<TroubleTicketEntity> findAll();
-
-    @Override
-    @EntityGraph(attributePaths = {"notes"})
-    Optional<TroubleTicketEntity> findById(UUID id);
+    List<TroubleTicketEntity> findAllByTenantId(String tenantId);
 
     @EntityGraph(attributePaths = {"notes"})
-    Optional<TroubleTicketEntity> findByExternalId(String externalId);
+    Optional<TroubleTicketEntity> findByIdAndTenantId(UUID id, String tenantId);
+
+    @EntityGraph(attributePaths = {"notes"})
+    Optional<TroubleTicketEntity> findByTenantIdAndExternalId(String tenantId, String externalId);
 }
