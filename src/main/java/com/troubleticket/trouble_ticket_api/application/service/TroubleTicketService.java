@@ -10,6 +10,7 @@ import com.troubleticket.trouble_ticket_api.application.port.out.TroubleTicketRe
 import com.troubleticket.trouble_ticket_api.domain.exception.TroubleTicketNotFoundException;
 import com.troubleticket.trouble_ticket_api.domain.model.Note;
 import com.troubleticket.trouble_ticket_api.domain.model.TroubleTicket;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +29,7 @@ public class TroubleTicketService implements
     }
 
     @Override
+    @Transactional
     public TroubleTicket create(TroubleTicketCreateRequest request) {
 
         Optional<TroubleTicket> existing =
@@ -54,17 +56,20 @@ public class TroubleTicketService implements
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TroubleTicket getById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new TroubleTicketNotFoundException(id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TroubleTicket> getAll() {
         return repository.findAll();
     }
 
     @Override
+    @Transactional
     public Note addNote(UUID ticketId, NoteCreateRequest request) {
 
         TroubleTicket ticket = repository.findById(ticketId)
@@ -78,6 +83,7 @@ public class TroubleTicketService implements
     }
 
     @Override
+    @Transactional
     public TroubleTicket close(UUID id) {
 
         TroubleTicket ticket = repository.findById(id)

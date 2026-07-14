@@ -15,18 +15,14 @@ public class TroubleTicketMapper {
         var api = new com.troubleticket.generated.model.TroubleTicket();
 
         api.setId(domain.getId().toString());
-
         api.setExternalId(domain.getExternalId());
-
         api.setServiceId(domain.getServiceId());
-
         api.setDescription(domain.getDescription());
-
         api.setStatus(toApiStatus(domain.getStatus()));
 
         api.setNotes(
                 domain.getNotes().stream()
-                        .map(this::toApi)
+                        .map(note -> toApi(note))
                         .toList()
         );
 
@@ -50,15 +46,11 @@ public class TroubleTicketMapper {
             com.troubleticket.trouble_ticket_api.domain.model.TroubleTicket domain
     ) {
 
-        var summary =
-                new com.troubleticket.generated.model.TroubleTicketSummary();
+        var summary = new com.troubleticket.generated.model.TroubleTicketSummary();
 
         summary.setExternalId(domain.getExternalId());
-
         summary.setServiceId(domain.getServiceId());
-
         summary.setDescription(domain.getDescription());
-
         summary.setStatus(
                 com.troubleticket.generated.model.TroubleTicketStatus.valueOf(
                         domain.getStatus().name()
@@ -71,7 +63,6 @@ public class TroubleTicketMapper {
     public List<TroubleTicketSummary> toSummaryList(
             List<com.troubleticket.trouble_ticket_api.domain.model.TroubleTicket> tickets
     ) {
-
         return tickets.stream()
                 .map(this::toSummary)
                 .toList();
