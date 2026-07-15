@@ -1,5 +1,9 @@
 package com.troubleticket.trouble_ticket_api.security;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -11,7 +15,16 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@Profile("dev") // Operates only on local development environment setup
+@Profile("dev")
+@SecurityScheme(
+        name = "bearerAuth",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT"
+)
+@OpenAPIDefinition(
+        security = @SecurityRequirement(name = "bearerAuth")
+)
 public class SecurityConfiguration {
 
     @Bean
@@ -26,7 +39,6 @@ public class SecurityConfiguration {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                // Injects local token evaluator intercepting default Bearer headers
                 .addFilterBefore(new DevBearerTokenFilter(), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
