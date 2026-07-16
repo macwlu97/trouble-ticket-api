@@ -6,5 +6,5 @@ import com.troubleticket.trouble_ticket_api.domain.model.TroubleTicket;
 
 public interface CloseTroubleTicketUseCase {
 
-    TroubleTicket close(UUID id);
+    TroubleTicket close(String id);
 }

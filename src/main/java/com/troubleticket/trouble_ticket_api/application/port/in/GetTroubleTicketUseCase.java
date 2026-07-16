@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public interface GetTroubleTicketUseCase {
 
-    TroubleTicket getById(UUID id);
+    TroubleTicket getById(String id);
 
     List<TroubleTicket> getAll();
 }

@@ -1,6 +1,6 @@
 package com.troubleticket.trouble_ticket_api.domain.model;
 
-import com.troubleticket.trouble_ticket_api.domain.exception.InvalidStatusTransitionException;
+import com.troubleticket.trouble_ticket_api.domain.model.value.*;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,38 +9,47 @@ import java.util.UUID;
 
 public class TroubleTicket {
 
-    private final UUID id;
-    private final String tenantId; // Added for multi-tenancy core isolation
-    private final String externalId;
-    private final Long serviceId;
+    private final TroubleTicketId id;
+    private final TenantId tenantId;
+    private final ExternalId externalId;
+    private final ServiceId serviceId;
     private final String description;
     private TroubleTicketStatus status;
     private final OffsetDateTime createdAt;
-    private final List<Note> notes = new ArrayList<>();
+    private final List<Note> notes;
 
-    // Creation constructor
-    public TroubleTicket(
-            UUID id,
-            String tenantId,
-            String externalId,
-            Long serviceId,
-            String description
+    public static TroubleTicket createNew(
+            TenantId tenantId,
+            ExternalId externalId,
+            ServiceId serviceId,
+            String description,
+            String initialNoteText
     ) {
-        this.id = id;
-        this.tenantId = tenantId;
-        this.externalId = externalId;
-        this.serviceId = serviceId;
-        this.description = description;
-        this.status = TroubleTicketStatus.NEW;
-        this.createdAt = OffsetDateTime.now();
+        if (description == null || description.isBlank()) {
+            throw new IllegalArgumentException("Description cannot be empty");
+        }
+
+        TroubleTicketId generatedId = TroubleTicketId.generate();
+        List<Note> initialNotes = new ArrayList<>();
+        initialNotes.add(new Note(new NoteId(UUID.randomUUID()), initialNoteText, OffsetDateTime.now()));
+
+        return new TroubleTicket(
+                generatedId,
+                tenantId,
+                externalId,
+                serviceId,
+                description,
+                new TroubleTicketStatus.New(),
+                OffsetDateTime.now(),
+                initialNotes
+        );
     }
 
-    // Reconstruction constructor (from database entity data mappings)
     public TroubleTicket(
-            UUID id,
-            String tenantId,
-            String externalId,
-            Long serviceId,
+            TroubleTicketId id,
+            TenantId tenantId,
+            ExternalId externalId,
+            ServiceId serviceId,
             String description,
             TroubleTicketStatus status,
             OffsetDateTime createdAt,
@@ -53,44 +62,36 @@ public class TroubleTicket {
         this.description = description;
         this.status = status;
         this.createdAt = createdAt;
-        if (notes != null) {
-            this.notes.addAll(notes);
-        }
+        this.notes = new ArrayList<>(notes != null ? notes : Collections.emptyList());
     }
 
-    public UUID getId() { return id; }
-    public String getTenantId() { return tenantId; }
-    public String getExternalId() { return externalId; }
-    public Long getServiceId() { return serviceId; }
+    public void acknowledge() {
+        this.status = TroubleTicketStatus.fromString("acknowledged");
+    }
+
+    public void resolve() {
+        this.status = TroubleTicketStatus.fromString("resolved");
+    }
+
+    public void close() {
+        this.status = this.status.close();
+    }
+
+    public Note addNote(String text) {
+        if (this.status instanceof TroubleTicketStatus.Closed) {
+            throw new IllegalStateException("Cannot add notes to a closed ticket");
+        }
+        Note note = new Note(new NoteId(UUID.randomUUID()), text, OffsetDateTime.now());
+        this.notes.add(note);
+        return note;
+    }
+
+    public TroubleTicketId getId() { return id; }
+    public TenantId getTenantId() { return tenantId; }
+    public ExternalId getExternalId() { return externalId; }
+    public ServiceId getServiceId() { return serviceId; }
     public String getDescription() { return description; }
     public TroubleTicketStatus getStatus() { return status; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public List<Note> getNotes() { return Collections.unmodifiableList(notes); }
-
-    public Note addNote(String text) {
-        Note note = new Note(UUID.randomUUID(), text, OffsetDateTime.now());
-        notes.add(note);
-        return note;
-    }
-
-    public void acknowledge() {
-        this.status = TroubleTicketStatus.ACKNOWLEDGED;
-    }
-
-    public void resolve() {
-        this.status = TroubleTicketStatus.RESOLVED;
-    }
-
-    public void close() {
-        if (this.status == TroubleTicketStatus.CLOSED) {
-            return;
-        }
-        // Business rule validation engine mapped from OpenAPI specifications contract requirements
-        if (this.status == TroubleTicketStatus.NEW) {
-            throw new InvalidStatusTransitionException(
-                    String.format("Cannot transition status directly from '%s' to 'CLOSED' without processing stage", this.status)
-            );
-        }
-        this.status = TroubleTicketStatus.CLOSED;
-    }
 }
