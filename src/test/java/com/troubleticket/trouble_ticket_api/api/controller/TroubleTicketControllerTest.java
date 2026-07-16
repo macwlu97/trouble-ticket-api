@@ -7,6 +7,10 @@ import com.troubleticket.trouble_ticket_api.application.port.in.CreateTroubleTic
 import com.troubleticket.trouble_ticket_api.application.port.in.GetTroubleTicketUseCase;
 import com.troubleticket.trouble_ticket_api.domain.model.TroubleTicket;
 import com.troubleticket.trouble_ticket_api.domain.model.TroubleTicketStatus;
+import com.troubleticket.trouble_ticket_api.domain.model.value.ExternalId;
+import com.troubleticket.trouble_ticket_api.domain.model.value.ServiceId;
+import com.troubleticket.trouble_ticket_api.domain.model.value.TenantId;
+import com.troubleticket.trouble_ticket_api.domain.model.value.TroubleTicketId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -49,7 +53,6 @@ class TroubleTicketControllerTest {
 
     @Test
     void shouldReturnCreated() throws Exception {
-
         TroubleTicketCreateRequest request = new TroubleTicketCreateRequest();
         request.setExternalId("EXT-1");
         request.setServiceId(10L);
@@ -58,19 +61,19 @@ class TroubleTicketControllerTest {
         request.setStatus(com.troubleticket.generated.model.TroubleTicketCreateStatus.NEW);
 
         TroubleTicket domain = new TroubleTicket(
-                UUID.randomUUID(),
-                "tenant-demo",
-                "EXT-1",
-                10L,
+                new TroubleTicketId("TT-2026-C70A230E"),
+                new TenantId("tenant-demo"),
+                new ExternalId("EXT-1"),
+                new ServiceId(10L),
                 "Problem",
-                TroubleTicketStatus.NEW,
+                new TroubleTicketStatus.New(),
                 OffsetDateTime.now(),
                 List.of()
         );
 
         com.troubleticket.generated.model.TroubleTicket apiTicket =
                 new com.troubleticket.generated.model.TroubleTicket();
-        apiTicket.setId(domain.getId().toString());
+        apiTicket.setId("TT-2026-C70A230E");
         apiTicket.setExternalId("EXT-1");
         apiTicket.setServiceId(10L);
         apiTicket.setDescription("Problem");
@@ -78,7 +81,7 @@ class TroubleTicketControllerTest {
         when(createUseCase.create(any()))
                 .thenReturn(domain);
 
-        when(mapper.toApi(any(com.troubleticket.trouble_ticket_api.domain.model.TroubleTicket.class)))
+        when(mapper.toApi(any(TroubleTicket.class)))
                 .thenReturn(apiTicket);
 
         mockMvc.perform(

@@ -1,6 +1,6 @@
 CREATE TABLE trouble_ticket
 (
-    id UUID PRIMARY KEY,
+    id VARCHAR(255) PRIMARY KEY,
 
     tenant_id VARCHAR(100) NOT NULL, -- Added for multi-tenancy core isolation
 
@@ -23,7 +23,7 @@ CREATE TABLE note
 (
     id UUID PRIMARY KEY,
 
-    trouble_ticket_id UUID NOT NULL,
+    trouble_ticket_id VARCHAR(255) NOT NULL,
 
     text TEXT NOT NULL,
 

@@ -8,7 +8,7 @@ import java.util.UUID;
 public interface AddNoteUseCase {
 
     Note addNote(
-            UUID ticketId,
+            String ticketId,
             NoteCreateRequest request
     );
 }

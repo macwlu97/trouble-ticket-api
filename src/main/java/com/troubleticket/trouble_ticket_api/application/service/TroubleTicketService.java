@@ -8,14 +8,15 @@ import com.troubleticket.trouble_ticket_api.application.port.in.CreateTroubleTic
 import com.troubleticket.trouble_ticket_api.application.port.in.GetTroubleTicketUseCase;
 import com.troubleticket.trouble_ticket_api.application.port.out.TroubleTicketRepository;
 import com.troubleticket.trouble_ticket_api.domain.exception.TroubleTicketNotFoundException;
+import com.troubleticket.trouble_ticket_api.domain.exception.ServiceNotFoundException;
 import com.troubleticket.trouble_ticket_api.domain.model.Note;
 import com.troubleticket.trouble_ticket_api.domain.model.TroubleTicket;
-import com.troubleticket.trouble_ticket_api.security.TenantContext; // FIX: Updated import to use the Phase 9 context container
+import com.troubleticket.trouble_ticket_api.domain.model.value.*;
+import com.troubleticket.trouble_ticket_api.security.TenantContext;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public class TroubleTicketService implements
         CreateTroubleTicketUseCase,
@@ -32,85 +33,91 @@ public class TroubleTicketService implements
     @Override
     @Transactional
     public TroubleTicket create(TroubleTicketCreateRequest request) {
-        String tenantId = getAuthenticatedTenantId();
 
-        // Business idempotency scoped strictly to the current authenticated tenant
+        TenantId tenantId = new TenantId(getAuthenticatedTenantId());
+
+        if (request.getServiceId() == null || request.getServiceId() <= 0) {
+            throw new ServiceNotFoundException(
+                    request.getServiceId() != null ? request.getServiceId() : 0L
+            );
+        }
+        ServiceId serviceId = new ServiceId(request.getServiceId());
+        ExternalId externalId = new ExternalId(request.getExternalId());
+
         Optional<TroubleTicket> existing =
-                repository.findByTenantIdAndExternalId(tenantId, request.getExternalId());
+                repository.findByTenantIdAndExternalId(tenantId, externalId);
 
         if (existing.isPresent()) {
             return existing.get();
         }
 
-        // Aggregate instantiation with explicit tenant isolation anchoring
-        TroubleTicket ticket = new TroubleTicket(
-                UUID.randomUUID(),
+        TroubleTicket ticket = TroubleTicket.createNew(
                 tenantId,
-                request.getExternalId(),
-                request.getServiceId(),
-                request.getDescription()
+                externalId,
+                serviceId,
+                request.getDescription(),
+                request.getNote()
         );
-
-        if (request.getNote() != null && !request.getNote().isBlank()) {
-            ticket.addNote(request.getNote());
-        }
 
         return repository.save(ticket);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public TroubleTicket getById(UUID id) {
-        String tenantId = getAuthenticatedTenantId();
+    public TroubleTicket getById(String id) {
+        String authTenant = getAuthenticatedTenantId();
 
-        // Prevents cross-tenant data leaks by returning 404 instead of exposing resource existence
-        return repository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new TroubleTicketNotFoundException(id));
+        System.out.println("DEBUG: Szukam ID: [" + id + "], Tenant: [" + authTenant + "]");
+
+        TroubleTicketId ticketId = new TroubleTicketId(id);
+        TenantId tenantId = new TenantId(authTenant);
+
+        var result = repository.findByIdAndTenantId(ticketId, tenantId);
+
+        if (result.isEmpty()) {
+            System.out.println("DEBUG: BAZA ZWRÓCIŁA PUSTY WYNIK!");
+        }
+
+        return result.orElseThrow(() -> new TroubleTicketNotFoundException(id));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TroubleTicket> getAll() {
-        String tenantId = getAuthenticatedTenantId();
-
-        // Enforces dataset containment limited exclusively to the authenticated tenant
+        TenantId tenantId = new TenantId(getAuthenticatedTenantId());
         return repository.findAllByTenantId(tenantId);
     }
 
     @Override
     @Transactional
-    public Note addNote(UUID ticketId, NoteCreateRequest request) {
-        String tenantId = getAuthenticatedTenantId();
+    public Note addNote(String id, NoteCreateRequest request) {
+        TenantId tenantId = new TenantId(getAuthenticatedTenantId());
+        TroubleTicketId ticketId = new TroubleTicketId(id);
 
-        // Subresource mutation guarded by multi-tenant access verification rules
         TroubleTicket ticket = repository.findByIdAndTenantId(ticketId, tenantId)
-                .orElseThrow(() -> new TroubleTicketNotFoundException(ticketId));
+                .orElseThrow(() -> new TroubleTicketNotFoundException(id));
 
-        ticket.addNote(request.getText());
+        Note note = ticket.addNote(request.getText());
 
         repository.save(ticket);
-
-        List<Note> notes = ticket.getNotes();
-        return notes.get(notes.size() - 1);
+        return note;
     }
 
     @Override
     @Transactional
-    public TroubleTicket close(UUID id) {
-        String tenantId = getAuthenticatedTenantId();
+    public TroubleTicket close(String id) {
+        TenantId tenantId = new TenantId(getAuthenticatedTenantId());
+        TroubleTicketId ticketId = new TroubleTicketId(id);
 
-        // Ticket state mutation secured under tenant domain context isolation boundaries
-        TroubleTicket ticket = repository.findByIdAndTenantId(id, tenantId)
+        TroubleTicket ticket = repository.findByIdAndTenantId(ticketId, tenantId)
                 .orElseThrow(() -> new TroubleTicketNotFoundException(id));
 
-        // Domain rule enforcement engine triggers state validation and might throw InvalidStatusTransitionException
         ticket.close();
 
         return repository.save(ticket);
     }
 
     private String getAuthenticatedTenantId() {
-        // FIX: Swapped TenantContextHolder.tenantId() with TenantContext.getTenantId() to align with Spring Security configurations
         return TenantContext.getTenantId();
     }
 }

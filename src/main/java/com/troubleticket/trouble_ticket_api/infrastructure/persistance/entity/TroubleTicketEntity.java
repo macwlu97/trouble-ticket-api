@@ -3,30 +3,25 @@ package com.troubleticket.trouble_ticket_api.infrastructure.persistance.entity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
-import com.troubleticket.trouble_ticket_api.domain.model.TroubleTicketStatus;
-
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Entity
 @Table(name = "trouble_ticket")
 public class TroubleTicketEntity {
 
     @Id
-    private UUID id;
+    private String id; // CHANGED: UUID replaced with String for the custom TroubleTicketId format
 
     @Column(name = "tenant_id", nullable = false)
     private String tenantId; // Added for multi-tenancy core isolation anchor points
 
-    @Column(name = "external_id", nullable = false) // REMOVED: unique = true (Uniqueness is handled by composite db index)
+    @Column(name = "external_id", nullable = false)
     private String externalId;
 
     @Column(name = "service_id", nullable = false)
@@ -35,9 +30,10 @@ public class TroubleTicketEntity {
     @Column(nullable = false)
     private String description;
 
-    @Enumerated(EnumType.STRING)
+    // CHANGED: Removed @Enumerated since status is now a polymorphic sealed interface.
+    // We persist its value directly as a raw String database column.
     @Column(nullable = false)
-    private TroubleTicketStatus status;
+    private String status;
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
@@ -55,12 +51,12 @@ public class TroubleTicketEntity {
 
     // Fully-parameterized constructor supporting tenant scope isolation data injection
     public TroubleTicketEntity(
-            UUID id,
-            String tenantId, // Added to fix the structural constructor compiler mismatch
+            String id, // CHANGED: Swapped UUID with String
+            String tenantId,
             String externalId,
             Long serviceId,
             String description,
-            TroubleTicketStatus status,
+            String status, // CHANGED: Swapped TroubleTicketStatus with raw String
             OffsetDateTime createdAt
     ) {
         this.id = id;
@@ -82,7 +78,7 @@ public class TroubleTicketEntity {
         note.setTroubleTicket(null);
     }
 
-    public UUID getId() {
+    public String getId() { // CHANGED: Return type changed to String
         return id;
     }
 
@@ -102,7 +98,7 @@ public class TroubleTicketEntity {
         return description;
     }
 
-    public TroubleTicketStatus getStatus() {
+    public String getStatus() { // CHANGED: Return type changed to String
         return status;
     }
 
@@ -114,7 +110,7 @@ public class TroubleTicketEntity {
         return notes;
     }
 
-    public void setStatus(TroubleTicketStatus status) {
+    public void setStatus(String status) { // CHANGED: Accept type changed to String
         this.status = status;
     }
 }

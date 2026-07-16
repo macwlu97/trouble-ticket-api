@@ -2,6 +2,7 @@ package com.troubleticket.trouble_ticket_api.api.exception;
 
 import com.troubleticket.generated.model.Error;
 import com.troubleticket.trouble_ticket_api.domain.exception.InvalidStatusTransitionException;
+import com.troubleticket.trouble_ticket_api.domain.exception.ServiceNotFoundException;
 import com.troubleticket.trouble_ticket_api.domain.exception.TroubleTicketNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Error> handleNotFound(TroubleTicketNotFoundException ex, HttpServletRequest request) {
         Error error = new Error();
         error.setCode("TROUBLE_TICKET_NOT_FOUND");
+        error.setMessage(ex.getMessage());
+        error.setRequestId(resolveRequestId(request));
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(ServiceNotFoundException.class)
+    public ResponseEntity<Error> handleServiceNotFound(ServiceNotFoundException ex, HttpServletRequest request) {
+        Error error = new Error();
+        error.setCode("SERVICE_NOT_FOUND");
         error.setMessage(ex.getMessage());
         error.setRequestId(resolveRequestId(request));
 

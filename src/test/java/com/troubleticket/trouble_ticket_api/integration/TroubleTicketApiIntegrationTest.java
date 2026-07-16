@@ -2,9 +2,10 @@ package com.troubleticket.trouble_ticket_api.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.troubleticket.generated.model.*;
+import com.troubleticket.trouble_ticket_api.domain.model.value.TroubleTicketId;
 import com.troubleticket.trouble_ticket_api.infrastructure.persistance.entity.TroubleTicketEntity;
 import com.troubleticket.trouble_ticket_api.infrastructure.persistance.repository.SpringDataTroubleTicketRepository;
-import com.troubleticket.trouble_ticket_api.domain.model.TroubleTicketStatus;
+import com.troubleticket.trouble_ticket_api.security.TenantContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import; // Added import
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -20,13 +21,13 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -34,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
-@Import(TroubleTicketApiIntegrationTest.TestJwtConfig.class) // FIX: Explicitly injects the test token decoder configuration into the Spring Boot test context
+@Import(TroubleTicketApiIntegrationTest.TestJwtConfig.class)
 class TroubleTicketApiIntegrationTest {
 
     private static final String MOCK_TENANT = "tenant-demo";
@@ -62,6 +63,14 @@ class TroubleTicketApiIntegrationTest {
     @Autowired
     private SpringDataTroubleTicketRepository springDataRepository;
 
+    // Pomocnik do ustawiania kontekstu w wątku MockMvc
+    private RequestPostProcessor withTenantContext() {
+        return request -> {
+            TenantContext.setTenantId(MOCK_TENANT);
+            return request;
+        };
+    }
+
     @TestConfiguration
     static class TestJwtConfig {
         @Bean
@@ -74,13 +83,12 @@ class TroubleTicketApiIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
-        // Ensures database cleanliness between integration flow lifecycle evaluations
         springDataRepository.deleteAll();
+        TenantContext.clear();
     }
 
     @Test
     void fullFlow() throws Exception {
-
         TroubleTicketCreateRequest create = new TroubleTicketCreateRequest();
         create.setExternalId("EXT-100");
         create.setServiceId(100L);
@@ -88,67 +96,51 @@ class TroubleTicketApiIntegrationTest {
         create.setStatus(TroubleTicketCreateStatus.NEW);
         create.setNote("Initial note");
 
-        // 1. Create a trouble ticket
+        // 1. Create
         String response = mvc.perform(
                         post("/troubleTicket")
+                                .with(withTenantContext())
                                 .with(SecurityMockMvcRequestPostProcessors.jwt()
-                                        .jwt(jwt -> jwt.claim("tenant_id", MOCK_TENANT).subject("integration-api-user")))
+                                        .jwt(jwt -> jwt.claim("tenant_id", MOCK_TENANT).subject("user")))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(create))
                 )
                 .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+                .andReturn().getResponse().getContentAsString();
 
         String id = objectMapper.readTree(response).get("id").asText();
 
-        // 2. Fetch all tickets
-        mvc.perform(
-                        get("/troubleTicket")
-                                .with(SecurityMockMvcRequestPostProcessors.jwt()
-                                        .jwt(jwt -> jwt.claim("tenant_id", MOCK_TENANT)))
-                )
+        // 2 & 3. Get all / Get one
+        mvc.perform(get("/troubleTicket").with(withTenantContext())
+                        .with(SecurityMockMvcRequestPostProcessors.jwt().jwt(j -> j.claim("tenant_id", MOCK_TENANT))))
                 .andExpect(status().isOk());
 
-        // 3. Fetch single ticket
-        mvc.perform(
-                        get("/troubleTicket/" + id)
-                                .with(SecurityMockMvcRequestPostProcessors.jwt()
-                                        .jwt(jwt -> jwt.claim("tenant_id", MOCK_TENANT)))
-                )
+        mvc.perform(get("/troubleTicket/" + id).with(withTenantContext())
+                        .with(SecurityMockMvcRequestPostProcessors.jwt().jwt(j -> j.claim("tenant_id", MOCK_TENANT))))
                 .andExpect(status().isOk());
 
-        // 4. Append note
+        // 4. Note
         NoteCreateRequest note = new NoteCreateRequest();
         note.setText("Second note");
-
-        mvc.perform(
-                        post("/troubleTicket/" + id + "/note")
-                                .with(SecurityMockMvcRequestPostProcessors.jwt()
-                                        .jwt(jwt -> jwt.claim("tenant_id", MOCK_TENANT)))
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(note))
-                )
+        mvc.perform(post("/troubleTicket/" + id + "/note").with(withTenantContext())
+                        .with(SecurityMockMvcRequestPostProcessors.jwt().jwt(j -> j.claim("tenant_id", MOCK_TENANT)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(note)))
                 .andExpect(status().isCreated());
 
-        // 5. Advance aggregate state machine
-        TroubleTicketEntity entity = springDataRepository.findById(UUID.fromString(id))
-                .orElseThrow(() -> new AssertionError("Ticket entity must be saved in database"));
-        entity.setStatus(TroubleTicketStatus.ACKNOWLEDGED);
+        // 5. Update Entity (Status)
+        TroubleTicketEntity entity = springDataRepository.findById(id)
+                .orElseThrow();
+        entity.setStatus("acknowledged");
         springDataRepository.save(entity);
 
-        // 6. Close the ticket
+        // 6. Close
         TroubleTicketCloseStatusRequest close = new TroubleTicketCloseStatusRequest();
         close.setStatus(TroubleTicketCloseStatus.CLOSED);
-
-        mvc.perform(
-                        patch("/troubleTicket/" + id)
-                                .with(SecurityMockMvcRequestPostProcessors.jwt()
-                                        .jwt(jwt -> jwt.claim("tenant_id", MOCK_TENANT)))
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(close))
-                )
+        mvc.perform(patch("/troubleTicket/" + id).with(withTenantContext())
+                        .with(SecurityMockMvcRequestPostProcessors.jwt().jwt(j -> j.claim("tenant_id", MOCK_TENANT)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(close)))
                 .andExpect(status().isOk());
     }
 }
